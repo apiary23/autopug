@@ -1,0 +1,16 @@
+{
+  "name": "autopug",
+  "version": "1.0.0",
+  "description": "Automatic html->pug compiler",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Alex Sanders",
+  "license": "ISC",
+  "dependencies": {
+    "chokidar": "^2.0.4",
+    "minimist": "^1.2.0",
+    "pug": "^2.0.3"
+  }
+}
