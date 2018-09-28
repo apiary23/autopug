@@ -10,12 +10,14 @@ const fs = require('fs-extra'),
         alias: {
             s: 'srcDir',
             d: 'destDir',
-            p: 'pretty'
+            p: 'pretty',
+            t: 'delay'
         },
         default: {
             srcDir: null,
             destDir: null,
-            pretty: true
+            pretty: true,
+            delay: 0
         }
     });
 
@@ -31,34 +33,42 @@ const warn = function (str) {
 let srcDir = args.srcDir,
     destDir = args.destDir;
 
+
 if (!srcDir) { // default to ./autopug for source and ./ for destination
-    const list = fs.readdirSync('./');
-    if (!list.some(n => n === 'autopug')) {
-        warn('./autopug not found; creating');
-        fs.mkdir('autopug');
-    }
+    // const list = fs.readdirSync('./');
+    // if (!list.some(n => n === 'autopug')) {
+    //     warn('./autopug not found; creating');
+    // }
     srcDir = './autopug';
 }
 if (!destDir) {
     destDir = './';
 }
 
+fs.ensureDir(srcDir);
+
 // normalize between posix/win32 paths
 const normalize = path.sep !== '\\'
     ? path.normalize.bind(path)
     : path.win32.normalize.bind(path.win32);
-const pugFiles = path.posix.normalize(`${srcDir}**/*.pug`); // chokidar expects a posix-y glob
+const pugFolder = path.posix.normalize(`${srcDir}**/*.pug`); // chokidar expects a posix-y glob
 srcDir = normalize(srcDir);
 destDir = normalize(destDir);
 
 log(`Watching: ${srcDir} Pug -> ${destDir} HTML`);
 
-const watcher = chokidar.watch(pugFiles);
-watcher.on('change', (filePath) => {
+let delayed = false;
+
+const watcher = chokidar.watch(pugFolder);
+watcher.on('change', async (filePath) => {
+    if (delayed) { return; } // skip write if delay is set
+
     const outputDest = filePath.replace(srcDir, '').replace('pug', 'html');
     let html;
     try {
-        html = pug.renderFile(filePath, { pretty: args.pretty });
+        while (!html) { // accommodate for editors that appear to double-modify a file during write
+            html = pug.renderFile(filePath, { pretty: args.pretty });
+        }
     } catch (e) { // invalid Pug
         warn(`WARNING: file ${filePath} contains invalid pug; not compiling`);
         warn(`${e.message}`);
@@ -66,5 +76,11 @@ watcher.on('change', (filePath) => {
     }
     const outName = `${path.join(destDir, outputDest)}`;
     fs.outputFile(outName, html, { encoding: 'utf-8' });
+    if (typeof args.delay === 'number' && args.delay) {
+        delayed = true;
+        setTimeout(() => {
+            delayed = false;
+        }, args.delay);
+    }
     log(`output to: ${outName}`);
 });
