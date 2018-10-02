@@ -11,15 +11,18 @@ const fs = require('fs-extra'),
             s: 'srcDir',
             d: 'destDir',
             p: 'pretty',
-            t: 'delay'
+            t: 'delay',
+            h: 'help'
         },
         default: {
             srcDir: null,
             destDir: null,
             pretty: true,
-            delay: 0
+            delay: 0,
+            help: null
         }
     });
+
 
 // Logging
 const log = function (str) {
@@ -29,16 +32,23 @@ const warn = function (str) {
     console.log(`\x1b[93m[autopug]\x1b[0m ${str}`);
 };
 
+if (args.help) {
+    log(`Usage:
+    autopug
+      -h : print this message and exit
+      -s [source]: directory to watch for changes; default is './autopug' (created if it doesn't exist)
+      -d [dest]: directory to which html will be rendered
+      -p : pretty-print HTML to human-readable form with indents
+      -t [number]: delay in milliseconds between writes; necessary if editor double-touches when writing`);
+    process.exit(0);
+}
+
 // shorthand
 let srcDir = args.srcDir,
     destDir = args.destDir;
 
 
-if (!srcDir) { // default to ./autopug for source and ./ for destination
-    // const list = fs.readdirSync('./');
-    // if (!list.some(n => n === 'autopug')) {
-    //     warn('./autopug not found; creating');
-    // }
+if (!srcDir) {
     srcDir = './autopug';
 }
 if (!destDir) {
